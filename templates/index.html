@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rule Engine Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .result {
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rule Engine Application</h1>
+
+    <h2>Create a New Rule</h2>
+    <form id="createRuleForm">
+        <label for="ruleString">Rule String</label>
+        <textarea id="ruleString" placeholder="Enter rule string here (e.g., (age > 30 AND department = 'Sales'))"></textarea>
+        
+        <label for="secondRuleString">Add Another Rule</label>
+        <textarea id="secondRuleString" placeholder="Enter second rule string here (e.g., (salary < 70000))"></textarea>
+        
+        <button type="submit">Create Rule</button>
+        <button type="button" id="combineRulesButton">Combine Rules</button>
+    </form>
+    <div id="createRuleResult" class="result"></div>
+    <div id="combineRulesResult" class="result"></div>
+
+    <h2>Evaluate Rule</h2>
+    <form id="evaluateRuleForm">
+        <label for="userData">User Data (JSON format)</label>
+        <textarea id="userData" placeholder='Enter user data here (e.g., {"age": 35, "department": "Sales", "salary": 60000, "experience": 3})'></textarea>
+        <button type="submit">Evaluate Rule</button>
+    </form>
+    <div id="evaluateRuleResult" class="result"></div>
+
+    <script>
+        document.getElementById('createRuleForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const ruleString = document.getElementById('ruleString').value;
+            const secondRuleString = document.getElementById('secondRuleString').value;
+
+            // Sending only the first rule to create a new rule
+            fetch('http://127.0.0.1:5000/api/create_rule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ rule_string: ruleString, second_rule_string: secondRuleString })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('createRuleResult').innerText = JSON.stringify(data);
+            })
+            .catch(error => {
+                document.getElementById('createRuleResult').innerText = 'Error: ' + error;
+            });
+        });
+
+        document.getElementById('combineRulesButton').addEventListener('click', function () {
+            const ruleString = document.getElementById('ruleString').value;
+            const secondRuleString = document.getElementById('secondRuleString').value;
+
+            const ruleStrings = [ruleString, secondRuleString].filter(Boolean); // Combine and filter out any empty strings
+            
+            console.log('Combining Rules:', ruleStrings); // Log the rules being sent
+
+            fetch('http://localhost:5000/api/combine_rules', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ rules: ruleStrings })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Combined Rule Response:', data);
+                document.getElementById('combineRulesResult').innerText = JSON.stringify(data);
+            })
+            .catch(error => {
+                console.error('Error fetching combine rules:', error); // Log the error for debugging
+                document.getElementById('combineRulesResult').innerText = 'Error: ' + error.message;
+            });
+        });
+
+        document.getElementById('evaluateRuleForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const userData = document.getElementById('userData').value;
+            const combinedAST = document.getElementById("combinedAST").value;
+
+            fetch('http://localhost:5000/api/evaluate_rule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_data: userDataObject, ast: combinedAstObject }) // Make sure userData is a valid JSON string
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('evaluateRuleResult').innerText = JSON.stringify(data);
+            })
+            .catch(error => {
+                document.getElementById('evaluateRuleResult').innerText = 'Error: ' + error;
+            });
+        });
+    </script>
+</body>
+</html>
